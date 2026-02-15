@@ -236,6 +236,8 @@ export const useProjectCollaborators = (projectId: string | undefined) => {
     queryFn: async () => {
       if (!projectId) return [];
       
+      console.log('[DEBUG] Fetching collaborators for project:', projectId);
+      
       // Get direct project collaborators
       const { data: collaborators, error: collabError } = await supabase
         .from('project_collaborators')
@@ -245,6 +247,8 @@ export const useProjectCollaborators = (projectId: string | undefined) => {
         `)
         .eq('project_id', projectId)
         .eq('is_active', true);
+      
+      console.log('[DEBUG] Collaborators query result:', { collaborators, collabError });
       
       if (collabError) throw collabError;
       
@@ -279,6 +283,8 @@ export const useProjectCollaborators = (projectId: string | undefined) => {
         return acc;
       }, [] as any[]);
       
+      console.log('[DEBUG] Final unique members:', uniqueMembers);
+      
       return uniqueMembers;
     },
     enabled: !!projectId,
@@ -301,6 +307,8 @@ export const useAddProjectCollaborator = () => {
       role?: 'owner' | 'contributor' | 'viewer';
       invitedBy: string;
     }) => {
+      console.log('[DEBUG] Adding collaborator:', { projectId, email, role, invitedBy });
+      
       // First, find user by email
       const { data: user, error: userError } = await supabase
         .from('users')
@@ -308,6 +316,8 @@ export const useAddProjectCollaborator = () => {
         .eq('email', email.toLowerCase().trim())
         .eq('is_active', true)
         .single();
+      
+      console.log('[DEBUG] User lookup result:', { user, userError });
       
       if (userError || !user) {
         throw new Error('No user exists with that email');
@@ -323,6 +333,7 @@ export const useAddProjectCollaborator = () => {
       
       if (existing) {
         // Update existing collaborator
+        console.log('[DEBUG] Updating existing collaborator:', existing.id);
         const { error: updateError } = await supabase
           .from('project_collaborators')
           .update({ 
@@ -332,9 +343,13 @@ export const useAddProjectCollaborator = () => {
           })
           .eq('id', existing.id);
         
-        if (updateError) throw updateError;
+        if (updateError) {
+          console.error('[DEBUG] Update error:', updateError);
+          throw updateError;
+        }
       } else {
         // Add new collaborator
+        console.log('[DEBUG] Inserting new collaborator');
         const { error: insertError } = await supabase
           .from('project_collaborators')
           .insert({
@@ -345,7 +360,10 @@ export const useAddProjectCollaborator = () => {
             is_active: true
           });
         
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error('[DEBUG] Insert error:', insertError);
+          throw insertError;
+        }
       }
       
       // Call notification function (creates notification and sends email)
