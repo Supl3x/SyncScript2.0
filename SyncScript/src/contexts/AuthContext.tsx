@@ -93,6 +93,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      // Check if user is verified before allowing access
+      if (session?.user && !session.user.email_confirmed_at) {
+        console.log('User email not verified, signing out');
+        // Sign out unverified users
+        supabase.auth.signOut();
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+      
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -106,6 +118,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
       console.log('Auth state changed:', event, session?.user?.email);
+      
+      // Check if user is verified before allowing access
+      if (session?.user && !session.user.email_confirmed_at) {
+        console.log('User email not verified, signing out');
+        // Sign out unverified users
+        await supabase.auth.signOut();
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
       
       // Update session and user immediately (don't wait for profile)
       setSession(session);
