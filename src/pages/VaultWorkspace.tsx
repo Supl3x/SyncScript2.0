@@ -23,6 +23,7 @@ import {
   useProjectCollaborators
 } from "@/hooks/useSupabaseExtended";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRealtimeCollaboration } from "@/hooks/useRealtimeCollaboration";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
@@ -41,6 +42,15 @@ export default function VaultWorkspace() {
   const { data: collaborators } = useProjectCollaborators(id);
   const { mutate: createComment, isPending: creatingComment } = useCreateComment();
   const { mutate: uploadFile, isPending: uploading } = useUploadFile();
+
+  // Real-time collaboration
+  const {
+    onlineUsers,
+    remoteContent,
+    remoteFileId,
+    broadcastEdit,
+    updateActiveFile,
+  } = useRealtimeCollaboration(id);
 
   const handleSendComment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -170,7 +180,10 @@ export default function VaultWorkspace() {
                 attachments.map((attachment) => (
                   <button
                     key={attachment.id}
-                    onClick={() => setSelectedResource(attachment.id)}
+                    onClick={() => {
+                      setSelectedResource(attachment.id);
+                      updateActiveFile(attachment.id);
+                    }}
                     className={`w-full text-left flex items-center gap-2 px-2 py-2 rounded-[155px_10px_145px_10px/10px_145px_10px_155px] transition-all text-sm font-sketch ${selectedResource === attachment.id
                       ? "bg-primary/10 border-2 border-ink shadow-sketch-sm"
                       : "hover:bg-paper-dark border-2 border-transparent"
@@ -211,6 +224,11 @@ export default function VaultWorkspace() {
                   fileUrl={att.file_path}
                   fileName={att.file_name}
                   mimeType={att.mime_type || ''}
+                  fileId={att.id}
+                  remoteContent={remoteContent}
+                  remoteFileId={remoteFileId}
+                  onEdit={broadcastEdit}
+                  onlineUsers={onlineUsers}
                 />
               ) : null;
             })()}
@@ -236,31 +254,71 @@ export default function VaultWorkspace() {
               Researchers
             </h3>
             <div className="space-y-2">
-              {collaborators && collaborators.length > 0 ? (
-                collaborators.map((member: any) => {
-                  const user = member.user;
-                  const initials = user?.full_name
-                    ?.split(' ')
-                    .map((n: string) => n[0])
-                    .join('')
-                    .toUpperCase()
-                    .slice(0, 2) || user?.email?.[0].toUpperCase() || '?';
-
-                  return (
-                    <div key={member.id} className="flex items-center gap-2">
-                      <div className="relative">
-                        <div className="w-8 h-8 rounded-full border-2 border-ink bg-paper-dark flex items-center justify-center text-xs font-sketch">
-                          {initials}
+              {/* Live online users */}
+              {onlineUsers.length > 0 && (
+                <>
+                  <p className="text-[10px] font-sketch text-marker-green font-bold uppercase tracking-wider">● Online Now</p>
+                  {onlineUsers.map((u) => {
+                    const initials = u.fullName
+                      .split(' ')
+                      .map((n: string) => n[0])
+                      .join('')
+                      .toUpperCase()
+                      .slice(0, 2);
+                    return (
+                      <div key={u.userId} className="flex items-center gap-2">
+                        <div className="relative">
+                          <div
+                            className="w-8 h-8 rounded-full border-2 border-ink flex items-center justify-center text-xs font-sketch text-white font-bold"
+                            style={{ backgroundColor: u.color }}
+                          >
+                            {initials}
+                          </div>
+                          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-card bg-marker-green" />
                         </div>
-                        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-card bg-marker-green" />
+                        <div className="flex flex-col">
+                          <span className="text-sm font-sketch">{u.fullName}</span>
+                          {u.activeFileId && (
+                            <span className="text-[10px] font-sketch text-muted-foreground">editing...</span>
+                          )}
+                        </div>
                       </div>
-                      <span className="text-sm font-sketch">
-                        {user?.full_name || user?.email || 'Unknown'}
-                      </span>
-                    </div>
-                  );
-                })
-              ) : (
+                    );
+                  })}
+                </>
+              )}
+              {/* DB collaborators (offline/fallback) */}
+              {collaborators && collaborators.length > 0 && (
+                <>
+                  {onlineUsers.length > 0 && (
+                    <p className="text-[10px] font-sketch text-muted-foreground font-bold uppercase tracking-wider mt-2">Members</p>
+                  )}
+                  {collaborators
+                    .filter((member: any) => !onlineUsers.some(u => u.userId === member.user?.id))
+                    .map((member: any) => {
+                      const memberUser = member.user;
+                      const initials = memberUser?.full_name
+                        ?.split(' ')
+                        .map((n: string) => n[0])
+                        .join('')
+                        .toUpperCase()
+                        .slice(0, 2) || memberUser?.email?.[0].toUpperCase() || '?';
+                      return (
+                        <div key={member.id} className="flex items-center gap-2 opacity-50">
+                          <div className="relative">
+                            <div className="w-8 h-8 rounded-full border-2 border-ink bg-paper-dark flex items-center justify-center text-xs font-sketch">
+                              {initials}
+                            </div>
+                          </div>
+                          <span className="text-sm font-sketch">
+                            {memberUser?.full_name || memberUser?.email || 'Unknown'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                </>
+              )}
+              {onlineUsers.length === 0 && (!collaborators || collaborators.length === 0) && (
                 <p className="text-sm font-sketch text-muted-foreground">No collaborators yet</p>
               )}
               {/* Invite button */}

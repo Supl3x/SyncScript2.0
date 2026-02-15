@@ -1,14 +1,20 @@
 import { useState, useEffect } from "react";
 import { FileText, Download, Loader2, AlertCircle, Image, Table, FileCode } from "lucide-react";
 import SketchyButton from "@/components/SketchyButton";
+import CollaborativeEditor from "@/components/CollaborativeEditor";
 
 interface FileViewerProps {
   fileUrl: string;
   fileName: string;
   mimeType: string;
+  fileId?: string;
+  remoteContent?: string | null;
+  remoteFileId?: string | null;
+  onEdit?: (fileId: string, content: string) => void;
+  onlineUsers?: { userId: string; fullName: string; color: string; activeFileId: string | null }[];
 }
 
-type ViewerState = 
+type ViewerState =
   | { status: "loading" }
   | { status: "error"; message: string }
   | { status: "ready"; content?: string };
@@ -16,7 +22,7 @@ type ViewerState =
 // Helpers to detect file type from mime + extension
 const getFileCategory = (mimeType: string, fileName: string): string => {
   const ext = fileName.split(".").pop()?.toLowerCase() || "";
-  
+
   // Images
   if (mimeType.startsWith("image/") || ["jpg", "jpeg", "png", "gif", "svg", "webp", "bmp", "ico"].includes(ext)) {
     return "image";
@@ -69,7 +75,8 @@ const getFileCategory = (mimeType: string, fileName: string): string => {
   return "unsupported";
 };
 
-export default function FileViewer({ fileUrl, fileName, mimeType }: FileViewerProps) {
+export default function FileViewer(props: FileViewerProps) {
+  const { fileUrl, fileName, mimeType } = props;
   const [state, setState] = useState<ViewerState>({ status: "loading" });
   const category = getFileCategory(mimeType, fileName);
 
@@ -235,7 +242,7 @@ export default function FileViewer({ fileUrl, fileName, mimeType }: FileViewerPr
         </div>
         <div
           className="prose prose-sm max-w-none p-4 font-sketch dark:prose-invert"
-          style={{ 
+          style={{
             lineHeight: "1.7",
             fontSize: "0.95rem",
           }}
@@ -291,6 +298,21 @@ export default function FileViewer({ fileUrl, fileName, mimeType }: FileViewerPr
 
   // Plain text / code
   if (category === "text") {
+    // Use collaborative editor when collaboration props are provided
+    if (props.fileId && props.onEdit) {
+      return (
+        <CollaborativeEditor
+          fileUrl={fileUrl}
+          fileName={fileName}
+          fileId={props.fileId}
+          remoteContent={props.remoteContent ?? null}
+          remoteFileId={props.remoteFileId ?? null}
+          onEdit={props.onEdit}
+          onlineUsers={props.onlineUsers ?? []}
+        />
+      );
+    }
+    // Fallback: read-only view
     const ext = fileName.split(".").pop()?.toLowerCase() || "txt";
     return (
       <div className="h-full overflow-y-auto">
