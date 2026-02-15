@@ -125,6 +125,15 @@ export default function VaultWorkspace() {
         </SketchyButton>
       </div>
 
+      {/* Share Modal */}
+      {showAccess && (
+        <ManageAccessModal
+          projectId={id}
+          project={project}
+          onClose={() => setShowAccess(false)}
+        />
+      )}
+
       {/* 3-Column Layout */}
       <div className="flex gap-4 h-[calc(100%-3.5rem)]">
         {/* Left: Resources */}
@@ -326,7 +335,6 @@ export default function VaultWorkspace() {
         </div>
       </div>
 
-      {showAccess && <ManageAccessModal onClose={() => setShowAccess(false)} />}
     </div>
   );
 }

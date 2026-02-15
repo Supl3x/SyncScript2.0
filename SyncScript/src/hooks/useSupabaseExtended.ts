@@ -236,30 +236,188 @@ export const useProjectCollaborators = (projectId: string | undefined) => {
     queryFn: async () => {
       if (!projectId) return [];
       
-      // Get the organization_id from the project
-      const { data: project, error: projectError } = await supabase
+      // Get direct project collaborators
+      const { data: collaborators, error: collabError } = await supabase
+        .from('project_collaborators')
+        .select(`
+          *,
+          user:users(id, full_name, email, avatar_url, username)
+        `)
+        .eq('project_id', projectId)
+        .eq('is_active', true);
+      
+      if (collabError) throw collabError;
+      
+      // Also get organization members if project is in an org
+      const { data: project } = await supabase
         .from('projects')
-        .select('organization_id')
+        .select('organization_id, owner_id')
         .eq('id', projectId)
         .single();
       
-      if (projectError) throw projectError;
-      if (!project.organization_id) return [];
+      let orgMembers: any[] = [];
+      if (project?.organization_id) {
+        const { data: orgData } = await supabase
+          .from('organization_members')
+          .select(`
+            *,
+            user:users(id, full_name, email, avatar_url, username)
+          `)
+          .eq('organization_id', project.organization_id)
+          .eq('is_active', true);
+        
+        if (orgData) orgMembers = orgData;
+      }
       
-      // Get organization members
-      const { data, error } = await supabase
-        .from('organization_members')
-        .select(`
-          *,
-          user:users(id, full_name, email, avatar_url, last_active_at)
-        `)
-        .eq('organization_id', project.organization_id)
-        .eq('is_active', true);
+      // Combine and deduplicate by user_id
+      const allMembers = [...(collaborators || []), ...orgMembers];
+      const uniqueMembers = allMembers.reduce((acc, member) => {
+        const userId = member.user?.id || member.user_id;
+        if (!acc.find(m => (m.user?.id || m.user_id) === userId)) {
+          acc.push(member);
+        }
+        return acc;
+      }, [] as any[]);
       
-      if (error) throw error;
-      return data;
+      return uniqueMembers;
     },
     enabled: !!projectId,
+  });
+};
+
+// Add collaborator to project
+export const useAddProjectCollaborator = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ 
+      projectId, 
+      email, 
+      role = 'viewer' as 'owner' | 'contributor' | 'viewer',
+      invitedBy 
+    }: { 
+      projectId: string; 
+      email: string; 
+      role?: 'owner' | 'contributor' | 'viewer';
+      invitedBy: string;
+    }) => {
+      // First, find user by email
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('id, email, full_name')
+        .eq('email', email.toLowerCase().trim())
+        .eq('is_active', true)
+        .single();
+      
+      if (userError || !user) {
+        throw new Error('No user exists with that email');
+      }
+      
+      // Check if already a collaborator
+      const { data: existing } = await supabase
+        .from('project_collaborators')
+        .select('id')
+        .eq('project_id', projectId)
+        .eq('user_id', user.id)
+        .single();
+      
+      if (existing) {
+        // Update existing collaborator
+        const { error: updateError } = await supabase
+          .from('project_collaborators')
+          .update({ 
+            role,
+            is_active: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existing.id);
+        
+        if (updateError) throw updateError;
+      } else {
+        // Add new collaborator
+        const { error: insertError } = await supabase
+          .from('project_collaborators')
+          .insert({
+            project_id: projectId,
+            user_id: user.id,
+            role,
+            invited_by: invitedBy,
+            is_active: true
+          });
+        
+        if (insertError) throw insertError;
+      }
+      
+      // Call notification function
+      const { error: notifyError } = await supabase.rpc('notify_collaborator_added', {
+        p_project_id: projectId,
+        p_user_id: user.id,
+        p_invited_by: invitedBy
+      });
+      
+      if (notifyError) {
+        console.error('Failed to send notification:', notifyError);
+        // Don't throw - collaboration was added successfully
+      }
+      
+      return user;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['collaborators', variables.projectId] });
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+    },
+  });
+};
+
+// Update collaborator role
+export const useUpdateCollaboratorRole = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({
+      collaboratorId,
+      role,
+      projectId
+    }: {
+      collaboratorId: string;
+      role: 'owner' | 'contributor' | 'viewer';
+      projectId: string;
+    }) => {
+      const { error } = await supabase
+        .from('project_collaborators')
+        .update({ role, updated_at: new Date().toISOString() })
+        .eq('id', collaboratorId);
+      
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['collaborators', variables.projectId] });
+    },
+  });
+};
+
+// Remove collaborator
+export const useRemoveCollaborator = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({
+      collaboratorId,
+      projectId
+    }: {
+      collaboratorId: string;
+      projectId: string;
+    }) => {
+      const { error } = await supabase
+        .from('project_collaborators')
+        .update({ is_active: false, updated_at: new Date().toISOString() })
+        .eq('id', collaboratorId);
+      
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['collaborators', variables.projectId] });
+    },
   });
 };
 
