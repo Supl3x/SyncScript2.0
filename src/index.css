@@ -1,0 +1,347 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 40 60% 97%;
+    --foreground: 220 15% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 15% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 15% 12%;
+
+    --primary: 225 70% 48%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 40 30% 92%;
+    --secondary-foreground: 220 15% 12%;
+
+    --muted: 40 20% 90%;
+    --muted-foreground: 220 10% 45%;
+
+    --accent: 350 75% 52%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 80% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 10% 20%;
+    --input: 220 10% 20%;
+    --ring: 225 70% 48%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 40 40% 95%;
+    --sidebar-foreground: 220 15% 12%;
+    --sidebar-primary: 225 70% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 40 30% 88%;
+    --sidebar-accent-foreground: 220 15% 12%;
+    --sidebar-border: 220 10% 20%;
+    --sidebar-ring: 225 70% 48%;
+
+    /* Custom tokens */
+    --paper: 40 60% 97%;
+    --paper-dark: 40 30% 92%;
+    --ink: 220 15% 12%;
+    --graph-line: 210 30% 85%;
+    --marker-red: 350 75% 52%;
+    --marker-blue: 225 70% 48%;
+    --marker-green: 145 60% 42%;
+    --marker-yellow: 45 95% 60%;
+    --shadow-sketch: 4px 4px 0px 0px hsl(220 15% 12%);
+    --shadow-sketch-sm: 2px 2px 0px 0px hsl(220 15% 12%);
+    --shadow-sketch-hover: 2px 2px 0px 0px hsl(220 15% 12%);
+    --sketchy-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+    --sketchy-radius-alt: 15px 255px 15px 225px / 225px 15px 255px 15px;
+    --sketchy-radius-sm: 155px 10px 145px 10px / 10px 145px 10px 155px;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 217.2 32.6% 12%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 217.2 32.6% 12%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 225 70% 58%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 50.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 25%;
+    --input: 217.2 32.6% 25%;
+    --ring: 225 70% 58%;
+
+    --sidebar-background: 217.2 32.6% 10%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 225 70% 58%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 25%;
+    --sidebar-ring: 225 70% 58%;
+
+    /* Custom tokens dark */
+    --paper: 222.2 84% 4.9%;
+    --paper-dark: 217.2 32.6% 12%;
+    --ink: 210 40% 98%;
+    --graph-line: 217.2 32.6% 20%;
+    --marker-red: 350 75% 62%;
+    --marker-blue: 225 70% 68%;
+    --marker-green: 145 60% 52%;
+    --marker-yellow: 45 95% 50%;
+    --shadow-sketch: 4px 4px 0px 0px hsl(210 40% 98% / 0.1);
+    --shadow-sketch-sm: 2px 2px 0px 0px hsl(210 40% 98% / 0.1);
+    --shadow-sketch-hover: 2px 2px 0px 0px hsl(210 40% 98% / 0.1);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Architects Daughter', cursive;
+  }
+}
+
+/* Graph Paper Background */
+.graph-paper {
+  background-color: hsl(var(--paper));
+  background-image:
+    linear-gradient(hsl(var(--graph-line) / 0.4) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--graph-line) / 0.4) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Sketchy borders */
+.sketchy-border {
+  border: 2px solid hsl(var(--ink));
+  border-radius: var(--sketchy-radius);
+  box-shadow: var(--shadow-sketch);
+}
+
+.sketchy-border-alt {
+  border: 2px solid hsl(var(--ink));
+  border-radius: var(--sketchy-radius-alt);
+  box-shadow: var(--shadow-sketch);
+}
+
+.sketchy-border-sm {
+  border: 2px solid hsl(var(--ink));
+  border-radius: var(--sketchy-radius-sm);
+  box-shadow: var(--shadow-sketch-sm);
+}
+
+/* Scribble animation for loading */
+.scribble-pattern {
+  background: repeating-linear-gradient(45deg,
+      hsl(var(--ink)),
+      hsl(var(--ink)) 2px,
+      transparent 2px,
+      transparent 6px);
+}
+
+@keyframes scribble-fill {
+  0% {
+    width: 0%;
+  }
+
+  100% {
+    width: 100%;
+  }
+}
+
+@keyframes pencil-bounce {
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(-15deg);
+  }
+
+  50% {
+    transform: translateY(-12px) rotate(5deg);
+  }
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+
+  25% {
+    transform: translateY(-6px) rotate(2deg);
+  }
+
+  75% {
+    transform: translateY(4px) rotate(-1deg);
+  }
+}
+
+@keyframes sketch-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) rotate(-2deg);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes wobble {
+
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  25% {
+    transform: rotate(1deg);
+  }
+
+  75% {
+    transform: rotate(-1deg);
+  }
+}
+
+@keyframes dash-move {
+  0% {
+    stroke-dashoffset: 100;
+  }
+
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-pencil-bounce {
+  animation: pencil-bounce 1.2s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-sketch-in {
+  animation: sketch-in 0.4s ease-out;
+}
+
+.animate-wobble {
+  animation: wobble 2s ease-in-out infinite;
+}
+
+@keyframes fall-in {
+  0% {
+    transform: translateY(-100vh);
+    opacity: 0;
+  }
+
+  60% {
+    transform: translateY(20px);
+    opacity: 1;
+  }
+
+  80% {
+    transform: translateY(-10px);
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-fall-in {
+  animation: fall-in 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+/* Underline input style */
+.input-underline {
+  border: none;
+  border-bottom: 2px solid hsl(var(--ink));
+  border-radius: 0;
+  background: transparent;
+  font-family: 'Architects Daughter', cursive;
+  padding: 0.5rem 0.25rem;
+  outline: none;
+}
+
+.input-underline:focus {
+  border-bottom-color: hsl(var(--marker-blue));
+}
+
+/* Dashed button */
+.btn-dashed {
+  border: 2px dashed hsl(var(--ink));
+  border-radius: var(--sketchy-radius-sm);
+  background: transparent;
+  font-family: 'Architects Daughter', cursive;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-dashed:hover {
+  background: hsl(var(--paper-dark));
+  box-shadow: var(--shadow-sketch-sm);
+}
+
+/* Notebook edge decoration */
+.notebook-edge {
+  border-right: 3px solid hsl(var(--ink));
+  position: relative;
+}
+
+.notebook-edge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -1px;
+  width: 3px;
+  height: 100%;
+  background: repeating-linear-gradient(to bottom,
+      hsl(var(--ink)) 0px,
+      hsl(var(--ink)) 4px,
+      transparent 4px,
+      transparent 20px);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--paper));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--ink) / 0.3);
+  border-radius: 100px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--ink) / 0.5);
+}
