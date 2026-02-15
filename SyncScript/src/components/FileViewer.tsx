@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
-import { FileText, Download, ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from "lucide-react";
+import { FileText, Download, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Edit } from "lucide-react";
 import SketchyButton from "./SketchyButton";
+import CollaborativeEditor from "./CollaborativeEditor";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
@@ -12,14 +13,16 @@ interface FileViewerProps {
   fileUrl: string;
   fileName: string;
   mimeType: string;
+  attachmentId?: string;
 }
 
-export default function FileViewer({ fileUrl, fileName, mimeType }: FileViewerProps) {
+export default function FileViewer({ fileUrl, fileName, mimeType, attachmentId }: FileViewerProps) {
   const [numPages, setNumPages] = useState<number>(0);
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [scale, setScale] = useState<number>(1.0);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState<boolean>(false);
 
   useEffect(() => {
     setPageNumber(1);
@@ -149,7 +152,18 @@ export default function FileViewer({ fileUrl, fileName, mimeType }: FileViewerPr
     fileName.toLowerCase().endsWith(".docx") ||
     fileName.toLowerCase().endsWith(".doc")
   ) {
-    // Use Microsoft Office Online Viewer for Word documents
+    // Show collaborative editor if in edit mode
+    if (editMode && attachmentId) {
+      return (
+        <CollaborativeEditor
+          attachmentId={attachmentId}
+          fileName={fileName}
+          onClose={() => setEditMode(false)}
+        />
+      );
+    }
+
+    // Use Microsoft Office Online Viewer for Word documents (read-only)
     const officeViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
     
     return (
@@ -160,9 +174,17 @@ export default function FileViewer({ fileUrl, fileName, mimeType }: FileViewerPr
             <FileText size={20} className="text-marker-blue" />
             <span className="text-sm font-sketch truncate">{fileName}</span>
           </div>
-          <SketchyButton variant="ghost" size="sm" onClick={handleDownload}>
-            <Download size={16} />
-          </SketchyButton>
+          <div className="flex gap-2">
+            {attachmentId && (
+              <SketchyButton variant="primary" size="sm" onClick={() => setEditMode(true)}>
+                <Edit size={16} className="mr-1" />
+                Edit
+              </SketchyButton>
+            )}
+            <SketchyButton variant="ghost" size="sm" onClick={handleDownload}>
+              <Download size={16} />
+            </SketchyButton>
+          </div>
         </div>
 
         {/* Word Viewer */}

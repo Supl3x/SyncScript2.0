@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Quill Editor Styles */
+@import 'react-quill/dist/quill.snow.css';
+
 @layer base {
   :root {
     --background: 40 60% 97%;

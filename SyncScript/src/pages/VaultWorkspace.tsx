@@ -233,6 +233,7 @@ export default function VaultWorkspace() {
                       fileUrl={attachment.file_path}
                       fileName={attachment.file_name}
                       mimeType={attachment.mime_type || ""}
+                      attachmentId={attachment.id}
                     />
                   );
                 })()}
