@@ -12,6 +12,7 @@ import {
 import SketchyButton from "@/components/SketchyButton";
 import BackButton from "@/components/BackButton";
 import ManageAccessModal from "@/components/ManageAccessModal";
+import FileViewer from "@/components/FileViewer";
 import { useNavigate, useParams } from "react-router-dom";
 import { useProject } from "@/hooks/useSupabase";
 import { 
@@ -213,43 +214,40 @@ export default function VaultWorkspace() {
 
         {/* Center: Document viewer */}
         <div className="flex-1 flex flex-col">
-          <div className="sketchy-border-alt bg-card flex-1 relative flex items-center justify-center">
+          <div className="sketchy-border-alt bg-card flex-1 relative overflow-hidden">
             {/* Paperclip decoration */}
             <Paperclip
               size={32}
               strokeWidth={2}
-              className="absolute -top-4 right-6 text-muted-foreground rotate-45"
+              className="absolute -top-4 right-6 text-muted-foreground rotate-45 z-10"
             />
 
             {selectedResource ? (
-              <div className="text-center p-8">
-                <FileText size={64} strokeWidth={1.5} className="mx-auto text-muted-foreground mb-4" />
-                <p className="text-xl font-sketch text-foreground mb-2">
-                  {attachments?.find((a) => a.id === selectedResource)?.file_name}
-                </p>
-                <p className="text-sm font-sketch text-muted-foreground mb-4">
-                  PDF viewer would render here
-                </p>
-                {attachments?.find((a) => a.id === selectedResource)?.file_path && (
-                  <a
-                    href={attachments.find((a) => a.id === selectedResource)?.file_path}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="sketchy-border-sm inline-block px-4 py-2 bg-primary/10 hover:bg-primary/20 transition-colors"
-                  >
-                    <span className="text-sm font-sketch">Open File</span>
-                  </a>
-                )}
+              <div className="h-full p-4">
+                {(() => {
+                  const attachment = attachments?.find((a) => a.id === selectedResource);
+                  if (!attachment) return null;
+                  
+                  return (
+                    <FileViewer
+                      fileUrl={attachment.file_path}
+                      fileName={attachment.file_name}
+                      mimeType={attachment.mime_type || ""}
+                    />
+                  );
+                })()}
               </div>
             ) : (
-              <div className="text-center p-8">
-                <FileText size={64} strokeWidth={1.5} className="mx-auto text-muted-foreground/40 mb-4" />
-                <p className="text-xl font-sketch text-muted-foreground">
-                  Select a resource to view
-                </p>
-                <p className="text-sm font-sketch text-muted-foreground/60 mt-1">
-                  Click on a PDF or link from the sidebar
-                </p>
+              <div className="h-full flex items-center justify-center">
+                <div className="text-center p-8">
+                  <FileText size={64} strokeWidth={1.5} className="mx-auto text-muted-foreground/40 mb-4" />
+                  <p className="text-xl font-sketch text-muted-foreground">
+                    Select a resource to view
+                  </p>
+                  <p className="text-sm font-sketch text-muted-foreground/60 mt-1">
+                    Click on a file from the sidebar
+                  </p>
+                </div>
               </div>
             )}
           </div>
