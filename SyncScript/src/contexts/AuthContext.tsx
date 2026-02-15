@@ -160,10 +160,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
+
+      // Check if email is verified
+      if (data?.user && !data.user.email_confirmed_at) {
+        // Sign out the user immediately
+        await supabase.auth.signOut();
+        return { 
+          error: { 
+            message: 'Please verify your email before signing in. Check your inbox for the verification link.' 
+          } 
+        };
+      }
+
       return { error };
     } catch (error) {
       return { error };

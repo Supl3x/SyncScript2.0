@@ -493,5 +493,29 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.organization_members;
 
 
 -- ============================================================================
+-- TABLE: project_collaborators
+-- Direct sharing of projects to individual users (not just through orgs)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS public.project_collaborators (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id      UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
+  user_id         UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  role            TEXT NOT NULL DEFAULT 'viewer' CHECK (role IN ('owner', 'contributor', 'viewer')),
+  invited_by      UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  invited_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  joined_at       TIMESTAMPTZ,
+  is_active       BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+  UNIQUE (project_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_project_collaborators_project ON public.project_collaborators(project_id);
+CREATE INDEX IF NOT EXISTS idx_project_collaborators_user ON public.project_collaborators(user_id);
+CREATE INDEX IF NOT EXISTS idx_project_collaborators_active ON public.project_collaborators(is_active) WHERE is_active = TRUE;
+
+
+-- ============================================================================
 -- Done! Proceed to functions.sql →
 -- ============================================================================

@@ -49,9 +49,10 @@ export default function RegisterPage() {
             setIsLoading(false);
         } else {
             toast.success("Account created!", {
-                description: "Welcome to SyncScript!",
+                description: "Please check your email to verify your account before signing in.",
             });
-            navigate("/dashboard");
+            // Don't navigate - user needs to verify email first
+            navigate("/login");
         }
     };
 
