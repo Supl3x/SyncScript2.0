@@ -3,6 +3,9 @@ import { Palette } from "lucide-react";
 import SketchyButton from "@/components/SketchyButton";
 import BackButton from "@/components/BackButton";
 import { useNavigate } from "react-router-dom";
+import { useCreateProject, useGenerateSlug } from "@/hooks/useSupabase";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const colorOptions = [
   { name: "Blue", value: "bg-marker-blue/10", border: "border-marker-blue" },
@@ -13,14 +16,57 @@ const colorOptions = [
 
 export default function NewVaultPage() {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
+  const { mutate: createProject, isPending } = useCreateProject();
+  const { mutateAsync: generateSlug } = useGenerateSlug();
+  
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [selectedColor, setSelectedColor] = useState(0);
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    // For now just navigate back
-    navigate("/dashboard");
+    
+    if (authLoading) {
+      toast.error("Please wait while we verify your session...");
+      return;
+    }
+    
+    if (!user) {
+      toast.error("You must be logged in");
+      navigate("/login");
+      return;
+    }
+
+    try {
+      // Use database function to generate unique slug
+      const slug = await generateSlug(title);
+      
+      createProject({
+        name: title,
+        slug: slug,
+        description: description || null,
+        owner_id: user.id,
+        color: colorOptions[selectedColor].name.toLowerCase(),
+        visibility: 'private',
+        status: 'pending',
+        priority: 'medium',
+      }, {
+        onSuccess: (data) => {
+          toast.success("Vault created successfully!");
+          navigate(`/dashboard/vault/${data.id}`);
+        },
+        onError: (error: any) => {
+          toast.error("Failed to create vault", {
+            description: error.message,
+          });
+        },
+      });
+    } catch (error: any) {
+      toast.error("Failed to generate slug", {
+        description: error.message,
+      });
+    }
   };
 
   return (
@@ -90,11 +136,20 @@ export default function NewVaultPage() {
 
           {/* Actions */}
           <div className="flex items-center justify-end gap-3">
-            <SketchyButton variant="ghost" type="button" onClick={() => navigate("/dashboard")}>
+            <SketchyButton 
+              variant="ghost" 
+              type="button" 
+              onClick={() => navigate("/dashboard")}
+              disabled={isPending}
+            >
               Cancel
             </SketchyButton>
-            <SketchyButton variant="primary" type="submit">
-              Create Vault →
+            <SketchyButton 
+              variant="primary" 
+              type="submit"
+              disabled={isPending || !title}
+            >
+              {isPending ? "Creating..." : "Create Vault →"}
             </SketchyButton>
           </div>
         </form>

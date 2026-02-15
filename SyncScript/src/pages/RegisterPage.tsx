@@ -10,18 +10,49 @@ import {
 } from "lucide-react";
 import SketchyButton from "@/components/SketchyButton";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 export default function RegisterPage() {
     const navigate = useNavigate();
+    const { signUp } = useAuth();
     const [fullName, setFullName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleRegister = (e: React.FormEvent) => {
+    const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
-        // TODO: Implement registration logic
-        navigate("/dashboard");
+        
+        if (password !== confirmPassword) {
+            toast.error("Passwords don't match");
+            return;
+        }
+
+        if (password.length < 6) {
+            toast.error("Password must be at least 6 characters");
+            return;
+        }
+
+        setIsLoading(true);
+
+        const { error } = await signUp(email, password, {
+            full_name: fullName,
+            username: email.split('@')[0], // Generate username from email
+        });
+
+        if (error) {
+            toast.error("Registration failed", {
+                description: error.message,
+            });
+            setIsLoading(false);
+        } else {
+            toast.success("Account created!", {
+                description: "Welcome to SyncScript!",
+            });
+            navigate("/dashboard");
+        }
     };
 
     return (
@@ -144,8 +175,13 @@ export default function RegisterPage() {
                         </div>
                     </div>
 
-                    <SketchyButton variant="primary" className="w-full" type="submit">
-                        Create Account →
+                    <SketchyButton 
+                        variant="primary" 
+                        className="w-full" 
+                        type="submit"
+                        disabled={isLoading || !fullName || !email || !password || !confirmPassword}
+                    >
+                        {isLoading ? "Creating account..." : "Create Account →"}
                     </SketchyButton>
                 </form>
 

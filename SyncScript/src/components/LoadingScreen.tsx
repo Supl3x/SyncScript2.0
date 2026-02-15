@@ -13,7 +13,7 @@ export default function LoadingScreen() {
     const animationTimer = setTimeout(() => {
       console.log("Animation complete");
       setAnimationComplete(true);
-    }, 2500); // 10 letters * 0.1s delay + 0.8s animation + buffer
+    }, 1500); // Faster animation - 1.5s instead of 2.5s
 
     return () => clearTimeout(animationTimer);
   }, []);
@@ -29,7 +29,7 @@ export default function LoadingScreen() {
           clearInterval(interval);
           return 100;
         }
-        return prev + 2; // Increment by 2% every interval
+        return prev + 5; // Faster progress - 5% instead of 2%
       });
     }, 30); // Update every 30ms for smooth animation
 
@@ -41,7 +41,7 @@ export default function LoadingScreen() {
       console.log("Progress complete, hiding loading screen");
       const timer = setTimeout(() => {
         setLoadingComplete(true);
-      }, 300); // Small delay after reaching 100%
+      }, 200); // Faster hide - 200ms instead of 300ms
       return () => clearTimeout(timer);
     }
   }, [progress]);

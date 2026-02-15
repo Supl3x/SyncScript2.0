@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
   { label: "My Vaults", icon: FolderOpen, path: "/dashboard" },
@@ -31,11 +32,27 @@ const SidebarContent = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { profile, user, signOut } = useAuth();
 
   const handleNav = (path: string) => {
     navigate(path);
     onNavigate?.();
   };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/login");
+  };
+
+  // Get user display info
+  const displayName = profile?.full_name || user?.email?.split('@')[0] || 'User';
+  const displayEmail = profile?.email || user?.email || '';
+  const initials = displayName
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2) || displayEmail[0]?.toUpperCase() || 'U';
 
   return (
     <div className={cn("flex flex-col h-full", className)}>
@@ -74,15 +91,15 @@ const SidebarContent = ({
       <div className="border-t-2 border-dashed border-ink/30 pt-4 mt-4">
         <div className="flex items-center gap-3 px-3 mb-3">
           <div className="w-9 h-9 rounded-full border-2 border-ink bg-marker-blue/20 flex items-center justify-center">
-            <span className="text-sm font-sketch text-foreground">DR</span>
+            <span className="text-sm font-sketch text-foreground">{initials}</span>
           </div>
           <div>
-            <p className="text-sm font-sketch text-foreground leading-tight">Dr. Researcher</p>
-            <p className="text-xs font-sketch text-muted-foreground">researcher@uni.edu</p>
+            <p className="text-sm font-sketch text-foreground leading-tight">{displayName}</p>
+            <p className="text-xs font-sketch text-muted-foreground">{displayEmail}</p>
           </div>
         </div>
         <button
-          onClick={() => handleNav("/login")}
+          onClick={handleSignOut}
           className="w-full flex items-center gap-3 px-3 py-2 text-sm font-sketch text-muted-foreground hover:text-destructive transition-colors"
         >
           <LogOut size={16} strokeWidth={2.5} />
