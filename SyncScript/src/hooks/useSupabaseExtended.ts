@@ -348,7 +348,7 @@ export const useAddProjectCollaborator = () => {
         if (insertError) throw insertError;
       }
       
-      // Call notification function
+      // Call notification function (creates notification and sends email)
       const { error: notifyError } = await supabase.rpc('notify_collaborator_added', {
         p_project_id: projectId,
         p_user_id: user.id,
@@ -358,6 +358,34 @@ export const useAddProjectCollaborator = () => {
       if (notifyError) {
         console.error('Failed to send notification:', notifyError);
         // Don't throw - collaboration was added successfully
+      }
+
+      // Also try to call Edge Function for email (if available)
+      try {
+        const { data: project } = await supabase
+          .from('projects')
+          .select('name')
+          .eq('id', projectId)
+          .single();
+
+        const { data: inviter } = await supabase
+          .from('users')
+          .select('full_name, email')
+          .eq('id', invitedBy)
+          .single();
+
+        await supabase.functions.invoke('send-collaboration-email', {
+          body: {
+            to: user.email,
+            subject: 'You have been added to a project',
+            project_name: project?.name || 'a project',
+            inviter_name: inviter?.full_name || inviter?.email || 'Someone',
+            project_id: projectId,
+          },
+        });
+      } catch (emailError) {
+        console.error('Edge function email failed (may not be deployed):', emailError);
+        // Don't throw - notification was created in database
       }
       
       return user;

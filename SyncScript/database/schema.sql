@@ -490,6 +490,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.comments;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.attachments;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.organization_members;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.project_collaborators;
 
 
 -- ============================================================================

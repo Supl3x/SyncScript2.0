@@ -86,7 +86,7 @@ CREATE POLICY project_collaborators_delete ON public.project_collaborators
     OR user_id = auth.uid()
   );
 
--- Function to send collaboration notification (placeholder - will use Supabase Edge Function)
+-- Function to send collaboration notification and email
 CREATE OR REPLACE FUNCTION public.notify_collaborator_added(
   p_project_id UUID,
   p_user_id UUID,
@@ -96,7 +96,28 @@ RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
+DECLARE
+  v_project_name TEXT;
+  v_inviter_name TEXT;
+  v_inviter_email TEXT;
+  v_user_email TEXT;
+  v_user_name TEXT;
 BEGIN
+  -- Get project details
+  SELECT name INTO v_project_name
+  FROM public.projects
+  WHERE id = p_project_id;
+
+  -- Get inviter details
+  SELECT full_name, email INTO v_inviter_name, v_inviter_email
+  FROM public.users
+  WHERE id = p_invited_by;
+
+  -- Get user details
+  SELECT full_name, email INTO v_user_name, v_user_email
+  FROM public.users
+  WHERE id = p_user_id;
+
   -- Create a notification for the user
   INSERT INTO public.notifications (
     user_id,
@@ -108,12 +129,37 @@ BEGIN
     p_user_id,
     'update',
     'You have been added to a project',
-    'You have been added as a collaborator to a project',
+    COALESCE(v_inviter_name, v_inviter_email) || ' added you to "' || COALESCE(v_project_name, 'a project') || '"',
     jsonb_build_object(
       'project_id', p_project_id,
       'invited_by', p_invited_by,
       'action', 'collaborator_added'
     )
   );
+
+  -- Call Supabase Edge Function to send email (if configured)
+  -- This will be handled by a database trigger or Edge Function
+  -- For now, we'll use pg_net extension if available, or rely on Edge Function
+  PERFORM net.http_post(
+    url := current_setting('app.settings.email_service_url', true),
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || current_setting('app.settings.email_service_key', true)
+    ),
+    body := jsonb_build_object(
+      'to', v_user_email,
+      'subject', 'You have been added to a project',
+      'template', 'collaborator_added',
+      'data', jsonb_build_object(
+        'project_name', v_project_name,
+        'inviter_name', COALESCE(v_inviter_name, v_inviter_email),
+        'project_id', p_project_id
+      )
+    )
+  );
+EXCEPTION
+  WHEN OTHERS THEN
+    -- If email service is not configured, just log and continue
+    RAISE NOTICE 'Email service not available: %', SQLERRM;
 END;
 $$;

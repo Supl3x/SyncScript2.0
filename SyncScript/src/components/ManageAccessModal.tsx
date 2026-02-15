@@ -8,6 +8,7 @@ import {
   useUpdateCollaboratorRole,
   useRemoveCollaborator,
 } from "@/hooks/useSupabaseExtended";
+import { useRealtimeSubscription } from "@/hooks/useSupabase";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import type { Project } from "@/lib/database.types";
@@ -50,6 +51,16 @@ export default function ManageAccessModal({ projectId, project, onClose }: Manag
   const addCollaborator = useAddProjectCollaborator();
   const updateRole = useUpdateCollaboratorRole();
   const removeCollaborator = useRemoveCollaborator();
+
+  // Subscribe to real-time updates for project_collaborators
+  useRealtimeSubscription(
+    'project_collaborators',
+    projectId ? { column: 'project_id', value: projectId } : undefined,
+    (payload) => {
+      console.log('Collaborator update:', payload);
+      // Query will automatically refetch due to invalidation
+    }
+  );
 
   // Get owner info
   const [owner, setOwner] = useState<any>(null);
