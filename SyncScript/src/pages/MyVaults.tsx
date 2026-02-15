@@ -21,7 +21,7 @@ export default function MyVaults() {
   const [search, setSearch] = useState("");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   
-  const { data: projects, isLoading, error } = useProjects();
+  const { data: projects, isLoading } = useProjects();
   const { mutate: deleteProject } = useDeleteProject();
   const { mutate: toggleFavorite } = useToggleFavorite();
 
@@ -73,36 +73,6 @@ export default function MyVaults() {
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-48" />
           ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="animate-sketch-in">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
-          <div className="min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-sketch text-foreground truncate">My Vaults 📂</h1>
-            <p className="text-muted-foreground font-sketch text-sm sm:text-base">
-              Your personal knowledge repositories
-            </p>
-          </div>
-          <SketchyButton variant="primary" className="flex items-center gap-2" onClick={() => navigate("/dashboard/new-vault")}>
-            <Plus size={20} strokeWidth={2.5} />
-            New Vault
-          </SketchyButton>
-        </div>
-        <div className="sketchy-border bg-card p-12 text-center">
-          <p className="text-xl font-sketch text-destructive mb-2">
-            Error loading vaults
-          </p>
-          <p className="text-sm font-sketch text-muted-foreground/60 mb-4">
-            {(error as any)?.message || "Please try refreshing the page"}
-          </p>
-          <SketchyButton variant="primary" onClick={() => window.location.reload()}>
-            Refresh Page
-          </SketchyButton>
         </div>
       </div>
     );

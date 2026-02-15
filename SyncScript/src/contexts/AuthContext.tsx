@@ -44,34 +44,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         .eq('id', userId)
         .single();
 
-      if (error) {
-        // If user doesn't exist, it might not have been created by trigger yet
-        // Wait a moment and try again
-        if (error.code === 'PGRST116') {
-          console.log('User profile not found, waiting for trigger...');
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          const { data: retryData, error: retryError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', userId)
-            .single();
-          
-          if (retryError) {
-            console.error('Error fetching user profile after retry:', retryError);
-            // Don't throw - user might still be able to use the app
-            return;
-          }
-          
-          setProfile(retryData);
-          return;
-        }
-        throw error;
-      }
+      if (error) throw error;
       setProfile(data);
     } catch (error) {
       console.error('Error fetching user profile:', error);
-      // Don't block auth if profile fetch fails
     }
   };
 
@@ -93,18 +69,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      // Check if user is verified before allowing access
-      if (session?.user && !session.user.email_confirmed_at) {
-        console.log('User email not verified, signing out');
-        // Sign out unverified users
-        supabase.auth.signOut();
-        setSession(null);
-        setUser(null);
-        setProfile(null);
-        setLoading(false);
-        return;
-      }
-      
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -117,41 +81,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
-      console.log('Auth state changed:', event, session?.user?.email);
-      
-      // Check if user is verified before allowing access
-      if (session?.user && !session.user.email_confirmed_at) {
-        console.log('User email not verified, signing out');
-        // Sign out unverified users
-        await supabase.auth.signOut();
-        setSession(null);
-        setUser(null);
-        setProfile(null);
-        setLoading(false);
-        return;
-      }
-      
-      // Update session and user immediately (don't wait for profile)
+      console.log('Auth state changed:', event);
       setSession(session);
       setUser(session?.user ?? null);
-      setLoading(false); // Set loading to false immediately so user can navigate
 
-      // Fetch profile in background (non-blocking)
       if (session?.user) {
-        // Don't await - let it run in background
-        fetchUserProfile(session.user.id).catch(err => {
-          console.error('Failed to fetch user profile:', err);
-        });
+        await fetchUserProfile(session.user.id);
         
-        // Update last login on sign in (also non-blocking)
+        // Update last login on sign in
         if (event === 'SIGNED_IN') {
-          updateLastLogin(session.user.id).catch(err => {
-            console.error('Failed to update last login:', err);
-          });
+          updateLastLogin(session.user.id);
         }
       } else {
         setProfile(null);
       }
+      
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -184,22 +129,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-
-      // Check if email is verified
-      if (data?.user && !data.user.email_confirmed_at) {
-        // Sign out the user immediately
-        await supabase.auth.signOut();
-        return { 
-          error: { 
-            message: 'Please verify your email before signing in. Check your inbox for the verification link.' 
-          } 
-        };
-      }
-
       return { error };
     } catch (error) {
       return { error };
@@ -230,32 +163,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     if (!user) return { error: new Error('No user logged in') };
 
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('users')
         .update({
           ...updates,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', user.id)
-        .select()
-        .single();
+        .eq('id', user.id);
 
-      if (error) {
-        console.error('Error updating profile:', error);
-        return { error };
+      if (!error && profile) {
+        setProfile({ ...profile, ...updates });
       }
 
-      // Update local profile state immediately
-      if (data) {
-        setProfile(data);
-      }
-
-      // Also refresh from database to ensure we have latest
-      await fetchUserProfile(user.id);
-
-      return { error: null };
+      return { error };
     } catch (error) {
-      console.error('Exception updating profile:', error);
       return { error };
     }
   };

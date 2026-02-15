@@ -3,7 +3,7 @@ import { Palette } from "lucide-react";
 import SketchyButton from "@/components/SketchyButton";
 import BackButton from "@/components/BackButton";
 import { useNavigate } from "react-router-dom";
-import { useCreateProject, useGenerateSlug } from "@/hooks/useSupabase";
+import { useCreateProject } from "@/hooks/useSupabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -16,57 +16,44 @@ const colorOptions = [
 
 export default function NewVaultPage() {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const { mutate: createProject, isPending } = useCreateProject();
-  const { mutateAsync: generateSlug } = useGenerateSlug();
   
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [selectedColor, setSelectedColor] = useState(0);
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (authLoading) {
-      toast.error("Please wait while we verify your session...");
-      return;
-    }
     
     if (!user) {
       toast.error("You must be logged in");
-      navigate("/login");
       return;
     }
 
-    try {
-      // Use database function to generate unique slug
-      const slug = await generateSlug(title);
-      
-      createProject({
-        name: title,
-        slug: slug,
-        description: description || null,
-        owner_id: user.id,
-        color: colorOptions[selectedColor].name.toLowerCase(),
-        visibility: 'private',
-        status: 'pending',
-        priority: 'medium',
-      }, {
-        onSuccess: (data) => {
-          toast.success("Vault created successfully!");
-          navigate(`/dashboard/vault/${data.id}`);
-        },
-        onError: (error: any) => {
-          toast.error("Failed to create vault", {
-            description: error.message,
-          });
-        },
-      });
-    } catch (error: any) {
-      toast.error("Failed to generate slug", {
-        description: error.message,
-      });
-    }
+    // Generate slug from title
+    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    
+    createProject({
+      name: title,
+      slug: slug,
+      description: description || null,
+      owner_id: user.id,
+      color: colorOptions[selectedColor].name.toLowerCase(),
+      visibility: 'private',
+      status: 'pending',
+      priority: 'medium',
+    }, {
+      onSuccess: (data) => {
+        toast.success("Vault created successfully!");
+        navigate(`/dashboard/vault/${data.id}`);
+      },
+      onError: (error: any) => {
+        toast.error("Failed to create vault", {
+          description: error.message,
+        });
+      },
+    });
   };
 
   return (

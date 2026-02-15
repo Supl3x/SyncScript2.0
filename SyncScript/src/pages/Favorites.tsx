@@ -21,7 +21,7 @@ export default function Favorites() {
   const navigate = useNavigate();
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   
-  const { data: favoriteProjects, isLoading, error } = useFavoriteProjects();
+  const { data: favoriteProjects, isLoading } = useFavoriteProjects();
   const { mutate: deleteProject } = useDeleteProject();
   const { mutate: toggleFavorite } = useToggleFavorite();
 
@@ -61,28 +61,6 @@ export default function Favorites() {
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-48" />
           ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="animate-sketch-in">
-        <BackButton label="Back to Dashboard" />
-        <div className="mb-8">
-          <h1 className="text-3xl font-sketch text-foreground">Favorites ⭐</h1>
-          <p className="text-muted-foreground font-sketch">
-            Your starred vaults for quick access
-          </p>
-        </div>
-        <div className="sketchy-border bg-card p-12 text-center">
-          <p className="text-xl font-sketch text-destructive mb-2">
-            Error loading favorites
-          </p>
-          <p className="text-sm font-sketch text-muted-foreground/60">
-            {(error as any)?.message || "Please try refreshing the page"}
-          </p>
         </div>
       </div>
     );

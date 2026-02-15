@@ -1,87 +1,34 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Pencil, Star, ArrowRight, Sparkles } from "lucide-react";
 import SketchyButton from "@/components/SketchyButton";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signIn, user, loading: authLoading } = useAuth();
+  const { signIn, loading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const from = location.state?.from?.pathname || "/dashboard";
 
-  // Redirect if already logged in
-  useEffect(() => {
-    if (!authLoading && user && !isLoading) {
-      navigate(from, { replace: true });
-    }
-  }, [user, authLoading, isLoading, navigate, from]);
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    try {
-      const { error } = await signIn(email, password);
+    const { error } = await signIn(email, password);
 
-      if (error) {
-        // Check if error is about email verification
-        if (error.message?.includes('verify') || error.message?.includes('email')) {
-          toast.error("Email verification required", {
-            description: "Please verify your email before signing in. Check your inbox for the verification link.",
-          });
-        } else {
-          toast.error("Login failed", {
-            description: error.message || "Invalid email or password",
-          });
-        }
-        setIsLoading(false);
-        return;
-      }
-
-      // Wait for session to be established (polling with timeout)
-      let attempts = 0;
-      const maxAttempts = 10; // 5 seconds max
-      
-      while (attempts < maxAttempts) {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session?.user) {
-          // Session is ready! Wait a tiny bit for auth context to update
-          await new Promise(resolve => setTimeout(resolve, 200));
-          setIsLoading(false);
-          toast.success("Welcome back!");
-          navigate(from, { replace: true });
-          return;
-        }
-        
-        await new Promise(resolve => setTimeout(resolve, 500));
-        attempts++;
-      }
-
-      // If we get here, session wasn't established in time
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setIsLoading(false);
-        toast.success("Welcome back!");
-        navigate(from, { replace: true });
-      } else {
-        setIsLoading(false);
-        toast.error("Login failed", {
-          description: "Session not established. Please try again.",
-        });
-      }
-    } catch (error: any) {
+    if (error) {
       toast.error("Login failed", {
-        description: error.message || "An unexpected error occurred",
+        description: error.message || "Invalid email or password",
       });
       setIsLoading(false);
+    } else {
+      toast.success("Welcome back!");
+      navigate(from, { replace: true });
     }
   };
 
